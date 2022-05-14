@@ -21,7 +21,7 @@ pub mod api {
     pub fn get_values() {
         // WIP JUST TO TEST THAT THIS WORKS WELL
         // TO REMOVE LAAAAAAAAAAAAAAAAAAAAAAA
-        trade::connect();
+        trade::connect(); // HERE LAAA
 
         let cryptos: Vec<String> = get_cryptos();
         fetch_crypto(cryptos);
@@ -49,7 +49,7 @@ pub mod api {
         }
     }
 
-    fn get_cryptos() -> Vec<String>  {
+    pub fn get_cryptos() -> Vec<String>  {
         let symbols_str = env::var("symbols").expect("Symbols should be seperated by a ,");
         let symbols: Vec<&str> = symbols_str.split(",").collect();
 

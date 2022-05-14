@@ -1,0 +1,15 @@
+- Boucle
+    - Récupérer valeur des cryptos voulues
+    - On met à jour la base timestamp avec les valeurs à l'instant T
+    - Récupérer de la base de données le stock en attente
+        - en attente = achat de crypto effectuée mais pas revendue
+    - Vérifier pour chaque ligne de stock si la condition de vente est atteinte
+        - condition de vente = pourcentage de la valeur attendue au dessus de la valeur de l'achat
+        - ligne achat + 5% : Valeur actuelle = +5% de la ligne d'achat
+            - Si oui, on vend
+    - On vérifie les deux dernières lignes de timestamp
+        - Si dernière ligne est > avant dernière ligne (avec le seuil d'achat en pourcentage déclaré)
+            - Alors on achète pour la valeur d'achat déclarée (variable ; 100€ ?)
+            - A améliorer en vérifiant les dernières 24h (x heures déclarées en .env)
+            - Se baser sur le dernier achat ou la dernière vente plutôt que 24h pour être réellement significatif
+
