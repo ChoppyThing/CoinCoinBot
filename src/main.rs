@@ -1,5 +1,6 @@
-mod database;
 mod api;
+mod database;
+mod trade;
 
 use std::{thread, time};
 use std::env;
