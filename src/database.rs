@@ -1,7 +1,17 @@
 pub mod database {
+	use serde::Deserialize;
 	use rusqlite::{Connection, Result};
 
-	pub fn open() -> Connection {
+	#[derive(Deserialize, Debug)]
+	pub struct Timestamp {
+		pub id: i32,
+		name: String,
+		direction: String,
+		pub value: f64,
+		datetime: String
+	}
+
+	fn open() -> Connection {
 		let conn = match Connection::open("transaction.db") {
 			Ok(a) => a,
 			Err(_) => panic!("Database cannot be opened or created.")
@@ -31,15 +41,15 @@ pub mod database {
 	    conn
 	}
 
-	pub fn insert() -> Result<()> {
-		let conn = open();
-		let mut statement = conn.prepare(
-			"INSERT INTO timestamp (name, value) VALUES (:name, :value)"
-		)?;
-		let _test = statement.execute(&[(":name", "Test"), (":value", "50.36")])?;
+	// pub fn insert() -> Result<()> {
+	// 	let conn = open();
+	// 	let mut statement = conn.prepare(
+	// 		"INSERT INTO timestamp (name, value) VALUES (:name, :value)"
+	// 	)?;
+	// 	let _test = statement.execute(&[(":name", "Test"), (":value", "50.36")])?;
 
-		Ok(())
-	}
+	// 	Ok(())
+	// }
 
 	pub fn add_timestamp(name: String, direction: String, value: String, datetime: String) -> Result<()> {
 		let conn = open();
@@ -54,5 +64,60 @@ pub mod database {
 		])?;
 
 		Ok(())
+	}
+
+	pub fn last_sell_prices(check_period: &str, name: &str) -> Vec<Timestamp> {
+		let conn = open();
+		let mut statement = conn.prepare(
+			"SELECT * FROM timestamp
+			WHERE datetime > :check_period
+			AND direction = 'SELL_AT'
+			AND name = :name
+			ORDER BY id ASC"
+		).expect("Statement error");
+
+		let timestamp_list = statement.query_map(&[
+			(":check_period", check_period),
+			(":name", name),
+		], |row| {
+			Ok(Timestamp {
+				id: row.get(0)?,
+				name: row.get(1)?,
+				direction: row.get(2)?,
+				value: row.get(3)?,
+				datetime: row.get(4)?,
+			})
+		}).expect("Query error");
+
+		let mut timestamps: Vec<Timestamp> = Vec::new();
+		for timestamp in timestamp_list {
+			let stamp: Timestamp = timestamp.unwrap();
+			timestamps.push(stamp);
+		}
+
+		timestamps
+	}
+
+	pub fn get_last_sell_price(name: &str) -> Timestamp {
+		let conn = open();
+		let mut statement = conn.prepare(
+			"SELECT * FROM timestamp
+			WHERE direction = 'SELL_AT'
+			AND name = :name
+			ORDER BY id DESC
+			LIMIT 1"
+		).expect("Statement error");
+
+		let timestamp_list = statement.query_map(&[(":name", name)], |row| {
+			Ok(Timestamp {
+				id: row.get(0)?,
+				name: row.get(1)?,
+				direction: row.get(2)?,
+				value: row.get(3)?,
+				datetime: row.get(4)?,
+			})
+		}).expect("Query error");
+
+		timestamp_list.last().unwrap().expect("Last sell price not found")
 	}
 }

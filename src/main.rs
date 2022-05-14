@@ -7,11 +7,13 @@ use std::env;
 use chrono;
 use dotenvy::dotenv;
 use rusqlite::Result;
-use crate::database::database::{insert};
+// use crate::database::database::{insert};
 use crate::api::api::{get_values};
+use crate::trade::trade::should_we_buy;
 
 fn main() -> Result<(), std::fmt::Error> {
     dotenv().ok();
+    //env::set_var("RUST_BACKTRACE", "full"); // HEY Comment this after debug
 
     let refresh_rate: u64 = match env::var("refresh_rate") {
         Ok(s) => match s.parse::<u64>() {
@@ -22,14 +24,16 @@ fn main() -> Result<(), std::fmt::Error> {
     };
     let delay = time::Duration::from_secs(refresh_rate);
 
-    get_values();
 
     loop{
-        let _database: Result<()> = insert();
+        //let _database: Result<()> = insert();
 
         let time = chrono::offset::Local::now();
         println!("{}", time.format("%F %T"));
         println!("sleeping for {}  sec", refresh_rate);
+
+        get_values();
+        should_we_buy();
 
         thread::sleep(delay);
     }

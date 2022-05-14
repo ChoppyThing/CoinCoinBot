@@ -49,7 +49,7 @@ pub mod api {
         }
     }
 
-    fn get_cryptos() -> Vec<String>  {
+    pub fn get_cryptos() -> Vec<String>  {
         let symbols_str = env::var("symbols").expect("Symbols should be seperated by a ,");
         let symbols: Vec<&str> = symbols_str.split(",").collect();
 

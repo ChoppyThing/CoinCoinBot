@@ -1,11 +1,15 @@
 pub mod trade {
     use std::env;
     use std::time::SystemTime;
+    use chrono::{Duration, Utc};
     use serde::Deserialize;
     use reqwest::header::{HeaderMap, HeaderValue};
     use sha2::Sha256;
     use hmac::{Hmac, Mac};
     use hex;
+
+    use crate::database::database;
+    use crate::api::api::get_cryptos;
 
     type HmacSha256 = Hmac<Sha256>;
 
@@ -95,5 +99,30 @@ pub mod trade {
         let hex_string: String = hex::encode(hex_result);
 
         return hex_string;
+    }
+
+    pub fn should_we_buy() {
+
+        let cryptos = get_cryptos();
+        for crypto in cryptos {
+
+            let percent = env::var("percentage").expect("Check your api_key in .env file");
+            let percentage: f64 = percent.parse::<f64>().unwrap();
+            let check_period = env::var("check_period").expect("Check your api_key in .env file");
+            let dt = Utc::now() +- Duration::days(check_period.parse::<i64>().expect("check_period must be an integer"));
+
+            let timestamp = database::last_sell_prices(&dt.format("%F").to_string(), &crypto);
+            let actual_price = database::get_last_sell_price(&crypto);
+
+            let compare_price = ((percentage / 100.0)) * actual_price.value;
+            println!("{:?}", compare_price);
+            for value in timestamp {
+                if value.value > (compare_price as f64) {
+                    println!("{:?}", value);
+                }
+            }
+
+            println!("sssss{:?}", actual_price);
+        }
     }
 }
