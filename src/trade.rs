@@ -70,23 +70,6 @@ pub mod trade {
         println!("{:?}", response);
     }
 
-    fn get_access_sign(timestamp: u64, method: &str, path: &str) -> String {
-        let access_sign: String = timestamp.to_string() + &method.to_owned() + &path.to_owned() + &"".to_owned();
-        println!("Prehash : {}", access_sign);
-
-        let client_secret = env::var("client_secret").expect("Check your client_secret in .env file");
-
-        let mut mac = HmacSha256::new_from_slice(client_secret.as_bytes())
-            .expect("HMAC can take key of any size");
-            mac.update(access_sign.as_bytes());
-
-        let result = mac.finalize();
-        let hex_result = result.into_bytes();
-        let hex_string: String = hex::encode(hex_result);
-
-        return hex_string;
-    }
-
     pub fn should_we_buy() {
 
         let cryptos = get_cryptos();
@@ -117,5 +100,26 @@ pub mod trade {
 
             println!("Actual price : {:?}", actual_price);
         }
+    }
+
+    /**
+     * Generates a token based on coinbase requirements
+     * See : https://developers.coinbase.com/docs/wallet/api-key-authentication
+     */
+    fn get_access_sign(timestamp: u64, method: &str, path: &str) -> String {
+        let access_sign: String = timestamp.to_string() + &method.to_owned() + &path.to_owned() + &"".to_owned();
+        println!("Prehash : {}", access_sign);
+
+        let client_secret = env::var("client_secret").expect("Check your client_secret in .env file");
+
+        let mut mac = HmacSha256::new_from_slice(client_secret.as_bytes())
+            .expect("HMAC can take key of any size");
+            mac.update(access_sign.as_bytes());
+
+        let result = mac.finalize();
+        let hex_result = result.into_bytes();
+        let hex_string: String = hex::encode(hex_result);
+
+        return hex_string;
     }
 }
