@@ -2,14 +2,14 @@ mod api;
 mod database;
 mod trade;
 
-use std::{thread, time};
-use std::env;
+use std::{env, thread, time};
 use chrono;
 use dotenvy::dotenv;
 use rusqlite::Result;
 // use crate::database::database::{insert};
 use crate::api::api::{get_values};
-use crate::trade::trade::should_we_buy;
+use crate::trade::trade::{should_we_buy, init};
+
 
 fn main() -> Result<(), std::fmt::Error> {
     dotenv().ok();
@@ -24,6 +24,7 @@ fn main() -> Result<(), std::fmt::Error> {
     };
     let delay = time::Duration::from_secs(refresh_rate);
 
+    init();
 
     loop{
         //let _database: Result<()> = insert();

@@ -4,7 +4,6 @@ pub mod api {
     use serde::Deserialize;
     use reqwest::blocking::get;
     use crate::database::database;
-    use crate::trade::trade;
 
     #[derive(Deserialize, Debug)]
     struct Price {
@@ -19,13 +18,8 @@ pub mod api {
     }
 
     pub fn get_values() {
-        // WIP JUST TO TEST THAT THIS WORKS WELL
-        // TO REMOVE LAAAAAAAAAAAAAAAAAAAAAAA
-        trade::connect(); // HERE LAAA
-
         let cryptos: Vec<String> = get_cryptos();
         fetch_crypto(cryptos);
-
     }
 
     fn fetch_crypto(cryptos: Vec<String>) {
