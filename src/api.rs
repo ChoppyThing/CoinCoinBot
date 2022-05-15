@@ -44,7 +44,7 @@ pub mod api {
                 let response = res.json::<DataPrice>().unwrap();
 
                 let price: Price = response.data;
-                database::add_timestamp(price.base.to_string(), value.to_string(), price.amount.to_string(), now.to_string());
+                let _result = database::add_timestamp(price.base.to_string(), value.to_string(), price.amount.to_string(), now.to_string());
             }
         }
     }

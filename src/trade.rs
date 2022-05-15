@@ -37,30 +37,16 @@ pub mod trade {
     pub fn connect() {
         let now = SystemTime::now();
 
-        let timestamp:u64;
-        match now.duration_since(SystemTime::UNIX_EPOCH) {
-            Ok(n) => {
-                timestamp = n.as_secs();
-                println!("1970-01-01 00:00:00 UTC was {} seconds ago!", n.as_secs())
-            }
-            Err(_) => panic!("SystemTime before UNIX EPOCH!"),
-        }
+        let timestamp:u64 = now.duration_since(SystemTime::UNIX_EPOCH)
+            .expect("TimeStamp needed").as_secs();
 
         let access_sign: String = get_access_sign(timestamp, "GET", "/v2/user");
 
         println!("Hash : {}", access_sign);
 
         fn construct_headers(timestamp: u64) -> HeaderMap {
-            let stamp = match HeaderValue::try_from(timestamp.to_string()) {
-                Ok(test) => test,
-                Err(_) => panic!("SystemTime before UNIX EPOCH!")
-            };
-
-            let access_sign = match HeaderValue::try_from(get_access_sign(timestamp, "GET", "/v2/user")) {
-                Ok(test) => test,
-                Err(_) => panic!("SystemTime before UNIX EPOCH!")
-            };
-
+            let stamp = HeaderValue::try_from(timestamp.to_string()).expect("Header error");
+            let access_sign = HeaderValue::try_from(get_access_sign(timestamp, "GET", "/v2/user")).expect("Header error");
             let api_key = env::var("api_key").expect("Check your api_key in .env file");
 
             let mut headers = HeaderMap::new();
@@ -114,15 +100,22 @@ pub mod trade {
             let timestamp = database::last_sell_prices(&dt.format("%F").to_string(), &crypto);
             let actual_price = database::get_last_sell_price(&crypto);
 
-            let compare_price = ((percentage / 100.0)) * actual_price.value;
-            println!("{:?}", compare_price);
             for value in timestamp {
-                if value.value > (compare_price as f64) {
+                let compare_price = ((percentage / 100.0)) * value.value;
+
+                // If actual price is x% less than the prices we have stored these last n number of days
+                if actual_price.value < (compare_price as f64) {
                     println!("{:?}", value);
+                    println!("===================");
+                    println!("Database price : {:?}", value.datetime);
+                    println!("Database price : {:?}", value.value);
+                    println!("Compare price : {:?}", compare_price);
+
+                    // We should Buy
                 }
             }
 
-            println!("sssss{:?}", actual_price);
+            println!("Actual price : {:?}", actual_price);
         }
     }
 }

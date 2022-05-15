@@ -5,10 +5,10 @@ pub mod database {
 	#[derive(Deserialize, Debug)]
 	pub struct Timestamp {
 		pub id: i32,
-		name: String,
-		direction: String,
+		pub name: String,
+		pub direction: String,
 		pub value: f64,
-		datetime: String
+		pub datetime: String
 	}
 
 	fn open() -> Connection {
@@ -32,6 +32,8 @@ pub mod database {
 	            name TEXT NOT NULL,
 	            type TEXT NOT NULL,
 	            value DECIMAL(10,2) NOT NULL,
+				bought_at DECIMAL(10,2) NOT NULL,
+				sold_at DECIMAL(10,2) NULL,
 	            status TEXT NOT NULL,
 	            datetime TEXT NOT NULL
 	        )",
@@ -71,7 +73,7 @@ pub mod database {
 		let mut statement = conn.prepare(
 			"SELECT * FROM timestamp
 			WHERE datetime > :check_period
-			AND direction = 'SELL_AT'
+			AND direction = 'BUY_AT'
 			AND name = :name
 			ORDER BY id ASC"
 		).expect("Statement error");
@@ -102,7 +104,7 @@ pub mod database {
 		let conn = open();
 		let mut statement = conn.prepare(
 			"SELECT * FROM timestamp
-			WHERE direction = 'SELL_AT'
+			WHERE direction = 'BUY_AT'
 			AND name = :name
 			ORDER BY id DESC
 			LIMIT 1"
