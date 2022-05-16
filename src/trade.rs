@@ -41,7 +41,7 @@ pub mod trade {
         currency: String,
     }
 
-    fn connect(method: &str, path: &str) -> reqwest::blocking::RequestBuilder {
+    fn connect(method: &str, path: &str, body: &str) -> reqwest::blocking::RequestBuilder {
         let now = SystemTime::now();
 
         let timestamp:u64 = now.duration_since(SystemTime::UNIX_EPOCH)
@@ -52,10 +52,10 @@ pub mod trade {
 
         if method == "GET" {
             client.get(url)
-                .headers(construct_headers(timestamp, method, path))
+                .headers(construct_headers(timestamp, method, path, ""))
         } else {
             client.post(url)
-                .headers(construct_headers(timestamp, method, path))
+                .headers(construct_headers(timestamp, method, path, body))
         }
     }
 
@@ -63,7 +63,7 @@ pub mod trade {
      * Inits the program to see if coinbase answers correctly to the basic api call
      */
     pub fn init () {
-        let res = connect("GET", "/v2/user");
+        let res = connect("GET", "/v2/user", "");
 
         let response = match res.send() {
             Ok(r) => r.json::<Response>(),
@@ -84,16 +84,16 @@ pub mod trade {
             amount: 10.00,
             currency: currency.to_string(),
         };
-        let buy_parameter_json = serde_json::to_string(&buy_parameter);
+        let buy_parameter_json = serde_json::to_string(&buy_parameter).expect("Expected Json as String");
 
         println!("{:?}", buy_parameter_json);
 
-        let id: String = get_account_id();
-        let url: String = format!("/v2/accounts/{}/buys", id);
+        //let id: String = get_account_id();
+        let url: String = format!("/v2/accounts/{}/buys", "97cee244-d348-5001-81f1-87b98090fb76");
 
-        let res = connect("POST", &url);
+        let res = connect("POST", &url, &buy_parameter_json);
 
-        let response = match res.body(buy_parameter_json.expect("Buy Json Parameter failure")).send() {
+        let response = match res.body(buy_parameter_json).send() {
             Ok(r) => r.text(),//::<Response>(),
             Err(_) => panic!("Json error")
         };
@@ -105,11 +105,11 @@ pub mod trade {
 
         let cryptos = get_cryptos();
         for crypto in cryptos {
-            // println!("\n\n");
-            // println!("=======================================================================");
-            // println!("                          Crypto - {}                                  ", crypto);
-            // println!("=======================================================================");
-            // println!("\n");
+            println!("\n\n");
+            println!("=======================================================================");
+            println!("                          Crypto - {}                                  ", crypto);
+            println!("=======================================================================");
+            println!("\n");
 
             let percent = env::var("percentage").expect("Check your api_key in .env file");
             let percentage: f64 = percent.parse::<f64>().unwrap();
@@ -124,12 +124,12 @@ pub mod trade {
 
                 // If actual price is x% less than the prices we have stored these last n number of days
                 if actual_price.value < (compare_price as f64) {
-                    // println!("=======================================================================");
-                    // println!("Lowest actual price");
-                    // println!("{:?}", value);
-                    // println!("Database price : {:?}", value.datetime);
-                    // println!("Database price : {:?}", value.value);
-                    // println!("Compare price : {:?}", compare_price);
+                    println!("=======================================================================");
+                    println!("Lowest actual price");
+                    println!("{:?}", value);
+                    println!("Database price : {:?}", value.datetime);
+                    println!("Database price : {:?}", value.value);
+                    println!("Compare price : {:?}", compare_price);
 
                     // We should Buy
                     buy(&crypto);
@@ -137,7 +137,7 @@ pub mod trade {
                 }
             }
 
-            // println!("Actual price : {:?}", actual_price);
+            println!("Actual price : {:?}", actual_price);
         }
     }
 
@@ -145,8 +145,8 @@ pub mod trade {
      * Generates a token based on coinbase requirements
      * See : https://developers.coinbase.com/docs/wallet/api-key-authentication
      */
-    fn get_access_sign(timestamp: u64, method: &str, path: &str) -> String {
-        let access_sign: String = timestamp.to_string() + &method.to_owned() + &path.to_owned() + &"".to_owned();
+    fn get_access_sign(timestamp: u64, method: &str, path: &str, body: &str) -> String {
+        let access_sign: String = timestamp.to_string() + &method.to_owned() + &path.to_owned() + &body.to_owned();
 
         let client_secret = env::var("client_secret").expect("Check your client_secret in .env file");
 
@@ -164,10 +164,10 @@ pub mod trade {
     /**
      * Constructs header needed by coinbase to auth
      */
-    fn construct_headers(timestamp: u64, method: &str, path: &str) -> HeaderMap {
+    fn construct_headers(timestamp: u64, method: &str, path: &str, body: &str) -> HeaderMap {
         let stamp = HeaderValue::try_from(timestamp.to_string())
             .expect("Header error");
-        let access_sign = HeaderValue::try_from(get_access_sign(timestamp, method, path))
+        let access_sign = HeaderValue::try_from(get_access_sign(timestamp, method, path, body))
             .expect("Header error");
         let api_key = env::var("api_key").expect("Check your api_key in .env file");
 
@@ -181,7 +181,7 @@ pub mod trade {
     }
 
     pub fn get_id () -> String {
-        let res = connect("GET", "/v2/user");
+        let res = connect("GET", "/v2/user", "");
 
         let response = match res.send() {
             Ok(r) => r.json::<Response>(),
@@ -213,7 +213,7 @@ println!("{:?}", response);
             pagination: PaginationAccount
         }
 
-        let res = connect("GET", "/v2/accounts");
+        let res = connect("GET", "/v2/accounts", "");
 
         let mut response = match res.send() {
             Ok(r) => r.json::<DataAccount>(),
@@ -230,7 +230,7 @@ println!("{:?}", response);
 
             // let next: &str = &response.as_ref().expect("Test 1").pagination.next_uri;
             println!("{:?}", next);
-            let res = connect("GET", next);
+            let res = connect("GET", next, "");
 
             response = match res.send() {
                 Ok(r) => r.json::<DataAccount>(),
