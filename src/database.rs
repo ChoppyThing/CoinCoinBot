@@ -31,11 +31,12 @@ pub mod database {
 	            id SERIAL PRIMARY KEY,
 	            name TEXT NOT NULL,
 	            type TEXT NOT NULL,
-	            value DECIMAL(10,2) NOT NULL,
+	            amount DECIMAL(10,2) NOT NULL,
 				bought_at DECIMAL(10,2) NOT NULL,
 				sold_at DECIMAL(10,2) NULL,
 	            status TEXT NOT NULL,
-	            datetime TEXT NOT NULL
+	            datetime TEXT NOT NULL,
+				fees DECIMAL(10,2) NOT NULL
 	        )",
 	        [],
 	    );
@@ -67,6 +68,25 @@ pub mod database {
 
 		Ok(())
 	}
+
+	// pub fn buy_stock(name: String, amount: f64, bought_at: , datetime: String) -> Result<()> {
+	// 	let conn = open();
+	// 	let mut statement = conn.prepare(
+	// 		"INSERT INTO stock (name, type, amount, bought_at, status, datetime, fees)
+	// 		VALUES (:name, :type, :amount, :bought_at, :status, :datetime, :fees)"
+	// 	)?;
+	// 	let _test = statement.execute(&[
+	// 		(":name", &name),
+	// 		(":type", ""),
+	// 		(":amount", &value),
+	// 		(":bought_at", &datetime),
+	// 		(":status", &datetime),
+	// 		(":datetime", &datetime),
+	// 		(":fees", &datetime),
+	// 	])?;
+
+	// 	Ok(())
+	// }
 
 	pub fn last_sell_prices(check_period: &str, name: &str) -> Vec<Timestamp> {
 		let conn = open();

@@ -96,6 +96,27 @@ pub mod trade {
     }
 
     fn buy(currency: &str, account_euro: &Account) -> Result<(), String> {
+        #[derive(Deserialize, Debug)]
+        struct DataBuy {
+            data: Buy
+        };
+        #[derive(Deserialize, Debug)]
+        struct Buy {
+            id: String,
+            amount: BuyAmount,
+            fee: BuyFee,
+        };
+        #[derive(Deserialize, Debug)]
+        struct BuyAmount {
+            amount: String,
+            currency: String
+        };
+        #[derive(Deserialize, Debug)]
+        struct BuyFee {
+            amount: String,
+            currency: String
+        };
+
         let buy_amount = env::var("buy_amount").expect("");
         let min_eur = env::var("min_eur").expect("");
 
@@ -108,13 +129,12 @@ pub mod trade {
             return Ok(());
         }
 
-        let last_sell_price = database::get_last_price(&currency.to_string(), &"BUY_AT");
-        let amount = buy_amount_f / last_sell_price.value;
-
+        //let last_sell_price = database::get_last_price(&currency.to_string(), &"BUY_AT");
+        let amount = buy_amount_f;
 
         let buy_parameter: BuyParameters = BuyParameters {
             amount: amount,
-            currency: currency.to_string(),
+            currency: "EUR".to_string(),
         };
         let buy_parameter_json = serde_json::to_string(&buy_parameter).expect("Expected Json as String");
 
@@ -129,15 +149,15 @@ pub mod trade {
 
         let res = connect("POST", &url, &buy_parameter_json);
         let response = match res.body(buy_parameter_json).send() {
-            Ok(r) => r.text(),//::<Response>(),
+            Ok(r) => r.json::<DataBuy>(),
             Err(_) => panic!("Json error")
         };
-
+        println!("{:?}", response);
         Ok(())
     }
 
     pub fn should_we_buy() {
-        let account_euro_id = env::var("account_id_eur").expect("Check your api_key in .env file");
+        let account_euro_id = env::var("account_id_eur").expect("Check your account_id_eur in .env file");
         let account_euro = get_account(&account_euro_id);
 
         let cryptos = get_cryptos();
