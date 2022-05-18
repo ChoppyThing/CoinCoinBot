@@ -100,17 +100,19 @@ pub mod database {
 		timestamps
 	}
 
-	pub fn get_last_sell_price(name: &str) -> Timestamp {
+	pub fn get_last_price(name: &str, direction: &str) -> Timestamp {
 		let conn = open();
 		let mut statement = conn.prepare(
 			"SELECT * FROM timestamp
-			WHERE direction = 'BUY_AT'
+			WHERE direction = :direction
 			AND name = :name
 			ORDER BY id DESC
 			LIMIT 1"
 		).expect("Statement error");
 
-		let timestamp_list = statement.query_map(&[(":name", name)], |row| {
+		let timestamp_list = statement.query_map(&[
+			(":name", name),
+			(":direction", direction)], |row| {
 			Ok(Timestamp {
 				id: row.get(0)?,
 				name: row.get(1)?,
