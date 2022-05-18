@@ -1,2 +1,2 @@
 # CoinCoinBot
-C'est le Coin Coin Bot
+C'est le CoinCoin Bot
