@@ -190,7 +190,7 @@ pub mod trade {
             println!("=======================================================================");
             println!("\n");
 
-            let percent = env::var("percentage").expect("Check your api_key in .env file");
+            let percent = env::var("buy_percentage").expect("Check your api_key in .env file");
             let percentage: f64 = percent.parse::<f64>().unwrap();
             let check_period = env::var("check_period").expect("Check your api_key in .env file");
             let dt = Utc::now() +- Duration::days(check_period.parse::<i64>().expect("check_period must be an integer"));
@@ -241,6 +241,94 @@ pub mod trade {
 
             println!("Actual price : {:?}", actual_price);
         }
+    }
+
+    pub fn should_we_sell() {
+        println!("\n\n");
+        println!("=======================================================================");
+        println!("                         Should we sell ?                              ");
+        println!("=======================================================================");
+
+        let percent = env::var("sell_percentage").expect("Check your api_key in .env file");
+        let percentage: f64 = percent.parse::<f64>().unwrap();
+
+        let cryptos = get_cryptos();
+        for crypto in cryptos {
+            let actual_price = database::get_last_price(&crypto, &"SELL_AT");
+
+            println!("Actual Sell price : {:?}", actual_price);
+
+            match database::get_unsold_stock(&crypto) {
+                Some(lines) => {
+                    for stock in lines {
+                        println!("Actual Sell price : {:?}", stock);
+
+                        let compare_price = ((percentage / 100.0)) * stock.bought_at;
+                        println!("Expected Sell price : {:?}", compare_price);
+                        println!("Actual Sell price : {:?}", actual_price.value);
+
+                        if actual_price.value > (compare_price as f64) {
+                            sell(&crypto, stock);
+                        }
+                    }
+                },
+                None => {
+                    println!("No stock to sell");
+                },
+            };
+        }
+    }
+
+    fn sell(crypto: &str, stock: database::Stock) {
+        #[derive(Deserialize, Debug)]
+        struct DataSell {
+            data: Sell
+        };
+        #[derive(Deserialize, Debug)]
+        struct Sell {
+            id: String,
+            amount: SellTotal,
+        };
+        #[derive(Deserialize, Debug)]
+        struct SellTotal {
+            amount: String,
+            currency: String
+        };
+
+        #[derive(Serialize, Deserialize, Debug)]
+        struct SellParameters {
+            amount: f64,
+            currency: String,
+        }
+
+        let sell_parameter: SellParameters = SellParameters {
+            amount: stock.amount,
+            currency: "EUR".to_string(),
+        };
+        let sell_parameter_json = serde_json::to_string(&sell_parameter).expect("Expected Json as String");
+
+        println!("{:?}", sell_parameter_json);
+
+
+        let account_parameter = "account_id_".to_owned() + &crypto.to_lowercase();
+        let account_id = env::var(account_parameter).expect(
+            &format!("Check your account_id{} in .env file", &crypto)
+        );
+
+        let url: String = format!("/v2/accounts/{}/sells", account_id);
+
+        let res = connect("POST", &url, &sell_parameter_json);
+        let response = match res.body(sell_parameter_json).send() {
+            Ok(r) => r.json::<DataSell>(),
+            Err(_) => panic!("Json error")
+        };
+
+        let sell: Sell = response.unwrap().data;
+
+        database::set_sold_stock(stock.id);
+
+        println!("----- Crypto Sold -----");
+        /*println!("{:?}", sell);*/
     }
 
     /**

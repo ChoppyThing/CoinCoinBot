@@ -8,7 +8,7 @@ use dotenvy::dotenv;
 use rusqlite::Result;
 // use crate::database::database::{insert};
 use crate::api::api::{get_values};
-use crate::trade::trade::{should_we_buy, init};
+use crate::trade::trade::{init, should_we_buy, should_we_sell};
 
 
 fn main() -> Result<(), std::fmt::Error> {
@@ -33,6 +33,7 @@ fn main() -> Result<(), std::fmt::Error> {
 
         get_values();
         should_we_buy();
+        should_we_sell();
 
         thread::sleep(delay);
     }

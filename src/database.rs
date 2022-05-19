@@ -92,6 +92,18 @@ pub mod database {
 		Ok(())
 	}
 
+	pub fn set_sold_stock(id: i32) -> Result<()> {
+		let conn = open();
+		let mut statement = conn.prepare(
+			"UPDATE stock SET status='SOLD' WHERE id=:id"
+		)?;
+		let _test = statement.execute(&[
+			(":id", &id),
+		])?;
+
+		Ok(())
+	}
+
 	pub fn last_sell_prices(check_period: &str, name: &str) -> Vec<Timestamp> {
 		let conn = open();
 		let mut statement = conn.prepare(
@@ -175,5 +187,36 @@ pub mod database {
 		}).expect("test");
 
 		stock.last().map(|result| result.ok()).flatten()
+	}
+
+	pub fn get_unsold_stock(name: &str) -> Option<Vec<Stock>> {
+		let conn = open();
+		let mut statement = conn.prepare(
+			"SELECT * FROM stock
+			WHERE name = :name
+			AND status = :status"
+		).expect("Statement error");
+
+		let stock = statement.query_map(&[
+			(":name", name),
+			(":status", &"BOUGHT".to_string())], |row| {
+			Ok(Stock {
+				id: row.get(0)?,
+				name: row.get(1)?,
+				amount: row.get(2)?,
+				bought_at: row.get(3)?,
+				sold_at: row.get(4)?,
+				status: row.get(5)?,
+				datetime: row.get(6)?,
+				fees: row.get(7)?,
+			})
+		}).expect("test");
+
+		let mut lines: Vec<Stock> = Vec::new();
+		for line in stock {
+			lines.push(line.unwrap());
+		}
+
+		Some(lines)
 	}
 }
