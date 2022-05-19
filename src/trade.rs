@@ -105,6 +105,8 @@ pub mod trade {
             id: String,
             amount: BuyAmount,
             fee: BuyFee,
+            total: BuyTotal,
+            unit_price: BuyUnitPrice,
         };
         #[derive(Deserialize, Debug)]
         struct BuyAmount {
@@ -116,6 +118,16 @@ pub mod trade {
             amount: String,
             currency: String
         };
+        #[derive(Deserialize, Debug)]
+        struct BuyTotal {
+            amount: String,
+            currency: String,
+        }
+        #[derive(Deserialize, Debug)]
+        struct BuyUnitPrice {
+            amount: String,
+            currency: String
+        }
 
         let buy_amount = env::var("buy_amount").expect("");
         let min_eur = env::var("min_eur").expect("");
@@ -152,7 +164,17 @@ pub mod trade {
             Ok(r) => r.json::<DataBuy>(),
             Err(_) => panic!("Json error")
         };
-        println!("{:?}", response);
+
+        let buy: Buy = response.unwrap().data;
+
+        let test = database::buy_stock(
+            currency.to_string(),
+            amount.to_string(),
+            buy.unit_price.amount,
+            buy.fee.amount);
+
+        println!("----- Crypto bought -----");
+        println!("{:?}", test);
         Ok(())
     }
 
@@ -173,26 +195,49 @@ pub mod trade {
             let check_period = env::var("check_period").expect("Check your api_key in .env file");
             let dt = Utc::now() +- Duration::days(check_period.parse::<i64>().expect("check_period must be an integer"));
 
-            let timestamp = database::last_sell_prices(&dt.format("%F").to_string(), &crypto);
             let actual_price = database::get_last_price(&crypto, &"BUY_AT");
 
-            for value in timestamp {
-                let compare_price = ((percentage / 100.0)) * value.value;
+            match database::get_last_unsold_stock(&crypto) {
+                Some(last_stock) => {
+                    println!("Last stock in database : {:?}", last_stock);
 
-                // If actual price is x% less than the prices we have stored these last n number of days
-                if actual_price.value < (compare_price as f64) {
-                    println!("=======================================================================");
-                    println!("Lowest actual price");
-                    println!("{:?}", value);
-                    println!("Database price : {:?}", value.datetime);
-                    println!("Database price : {:?}", value.value);
+                    println!("Last price normalized : {:?}", last_stock.bought_at);
+                    let compare_price = ((percentage / 100.0)) * last_stock.bought_at;
                     println!("Compare price : {:?}", compare_price);
+                    if actual_price.value < (compare_price as f64) {
+                        println!("=======================================================================");
+                        println!("Lowest actual price");
+                        println!("{:?}", last_stock);
+                        println!("Database price : {:?}", last_stock.bought_at);
+                        println!("Compare price : {:?}", compare_price);
 
-                    // We should Buy
-                    buy(&crypto, &account_euro);
-                    break;
-                }
-            }
+                        // We should Buy
+                        buy(&crypto, &account_euro);
+                        break;
+                    }
+                },
+                None => {
+                    println!("No stock in database");
+
+                    let timestamp = database::last_sell_prices(&dt.format("%F").to_string(), &crypto);
+                    for value in timestamp {
+                        let compare_price = ((percentage / 100.0)) * value.value;
+
+                        // If actual price is x% less than the prices we have stored these last n number of days
+                        if actual_price.value < (compare_price as f64) {
+                            println!("=======================================================================");
+                            println!("Lowest actual price");
+                            println!("{:?}", value);
+                            println!("Database price : {:?}", value.value);
+                            println!("Compare price : {:?}", compare_price);
+
+                            // We should Buy
+                            buy(&crypto, &account_euro);
+                            break;
+                        }
+                    }
+                },
+            };
 
             println!("Actual price : {:?}", actual_price);
         }

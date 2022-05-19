@@ -27,8 +27,6 @@ fn main() -> Result<(), std::fmt::Error> {
     init();
 
     loop{
-        //let _database: Result<()> = insert();
-
         let time = chrono::offset::Local::now();
         println!("{}", time.format("%F %T"));
         println!("sleeping for {}  sec", refresh_rate);

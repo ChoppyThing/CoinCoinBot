@@ -11,6 +11,18 @@ pub mod database {
 		pub datetime: String
 	}
 
+	#[derive(Deserialize, Debug)]
+	pub struct Stock {
+		pub id: i32,
+		pub name: String,
+		pub amount: f64,
+		pub bought_at: f64,
+		pub sold_at: f64,
+		pub status: String,
+		pub datetime: String,
+		pub fees: f64,
+	}
+
 	fn open() -> Connection {
 		let conn = match Connection::open("transaction.db") {
 			Ok(a) => a,
@@ -28,9 +40,8 @@ pub mod database {
 	    );
 
 	    _result = conn.execute("CREATE TABLE IF NOT EXISTS stock (
-	            id SERIAL PRIMARY KEY,
+	            id INTEGER PRIMARY KEY AUTOINCREMENT,
 	            name TEXT NOT NULL,
-	            type TEXT NOT NULL,
 	            amount DECIMAL(10,2) NOT NULL,
 				bought_at DECIMAL(10,2) NOT NULL,
 				sold_at DECIMAL(10,2) NULL,
@@ -43,16 +54,6 @@ pub mod database {
 
 	    conn
 	}
-
-	// pub fn insert() -> Result<()> {
-	// 	let conn = open();
-	// 	let mut statement = conn.prepare(
-	// 		"INSERT INTO timestamp (name, value) VALUES (:name, :value)"
-	// 	)?;
-	// 	let _test = statement.execute(&[(":name", "Test"), (":value", "50.36")])?;
-
-	// 	Ok(())
-	// }
 
 	pub fn add_timestamp(name: String, direction: String, value: String, datetime: String) -> Result<()> {
 		let conn = open();
@@ -69,24 +70,27 @@ pub mod database {
 		Ok(())
 	}
 
-	// pub fn buy_stock(name: String, amount: f64, bought_at: , datetime: String) -> Result<()> {
-	// 	let conn = open();
-	// 	let mut statement = conn.prepare(
-	// 		"INSERT INTO stock (name, type, amount, bought_at, status, datetime, fees)
-	// 		VALUES (:name, :type, :amount, :bought_at, :status, :datetime, :fees)"
-	// 	)?;
-	// 	let _test = statement.execute(&[
-	// 		(":name", &name),
-	// 		(":type", ""),
-	// 		(":amount", &value),
-	// 		(":bought_at", &datetime),
-	// 		(":status", &datetime),
-	// 		(":datetime", &datetime),
-	// 		(":fees", &datetime),
-	// 	])?;
+	pub fn buy_stock(name: String, amount: String, bought_at: String, fees: String) -> Result<()> {
+		let datetime = chrono::offset::Local::now();
+        let now = datetime.format("%F %T").to_string();
 
-	// 	Ok(())
-	// }
+		let conn = open();
+		let mut statement = conn.prepare(
+			"INSERT INTO stock (name, amount, bought_at, status, datetime, fees)
+			VALUES (:name, :amount, :bought_at, :status, :datetime, :fees)"
+		)?;
+		let _test = statement.execute(&[
+			(":name", &name),
+			(":amount", &amount),
+			(":bought_at", &bought_at),
+			(":bought_at", &"0".to_string()),
+			(":status", &"BOUGHT".to_string()),
+			(":datetime", &now.to_string()),
+			(":fees", &fees)
+		])?;
+
+		Ok(())
+	}
 
 	pub fn last_sell_prices(check_period: &str, name: &str) -> Vec<Timestamp> {
 		let conn = open();
@@ -143,5 +147,33 @@ pub mod database {
 		}).expect("Query error");
 
 		timestamp_list.last().unwrap().expect("Last sell price not found")
+	}
+
+	pub fn get_last_unsold_stock(name: &str) -> Option<Stock> {
+		let conn = open();
+		let mut statement = conn.prepare(
+			"SELECT * FROM stock
+			WHERE name = :name
+			AND status = :status
+			ORDER BY id DESC
+			LIMIT 1"
+		).expect("Statement error");
+
+		let stock = statement.query_map(&[
+			(":name", name),
+			(":status", &"BOUGHT".to_string())], |row| {
+			Ok(Stock {
+				id: row.get(0)?,
+				name: row.get(1)?,
+				amount: row.get(2)?,
+				bought_at: row.get(3)?,
+				sold_at: row.get(4)?,
+				status: row.get(5)?,
+				datetime: row.get(6)?,
+				fees: row.get(7)?,
+			})
+		}).expect("test");
+
+		stock.last().map(|result| result.ok()).flatten()
 	}
 }
