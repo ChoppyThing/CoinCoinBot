@@ -197,45 +197,65 @@ pub mod trade {
 
             let actual_price = database::get_last_price(&crypto, &"BUY_AT");
 
-            match database::get_last_unsold_stock(&crypto) {
-                Some(last_stock) => {
-                    println!("Last stock in database : {:?}", last_stock);
 
-                    println!("Last price normalized : {:?}", last_stock.bought_at);
-                    let compare_price = ((percentage / 100.0)) * last_stock.bought_at;
-                    println!("Compare price : {:?}", compare_price);
-                    if actual_price.value < (compare_price as f64) {
-                        println!("=======================================================================");
-                        println!("Lowest actual price");
-                        println!("{:?}", last_stock);
-                        println!("Database price : {:?}", last_stock.bought_at);
-                        println!("Compare price : {:?}", compare_price);
+            // Verify if there is not too many stock before buying more.
+            // This verifies that we are not buying continuously until the floor amount is met
+            // To make sure that we don't continuously buy if the price falls continuously
+            let max_buy_stock = env::var("max_buy_stock").expect("Check your max_buy_stock in .env file");
+            match database::get_unsold_stock(&crypto) {
+                Some(lines) => {
+                    if lines.iter().count() <= max_buy_stock.parse::<usize>().unwrap() {
 
-                        // We should Buy
-                        buy(&crypto, &account_euro);
-                        break;
+                        match database::get_last_unsold_stock(&crypto) {
+                            // If stock is found
+                            // We compare with the last bought stock
+                            Some(last_stock) => {
+                                println!("Last stock in database : {:?}", last_stock);
+
+                                println!("Last price normalized : {:?}", last_stock.bought_at);
+                                let compare_price = ((percentage / 100.0)) * last_stock.bought_at;
+                                println!("Compare price : {:?}", compare_price);
+                                if actual_price.value < (compare_price as f64) {
+                                    println!("=======================================================================");
+                                    println!("Lowest actual price");
+                                    println!("{:?}", last_stock);
+                                    println!("Database price : {:?}", last_stock.bought_at);
+                                    println!("Compare price : {:?}", compare_price);
+
+                                    // We should Buy
+                                    buy(&crypto, &account_euro);
+                                    break;
+                                }
+                            },
+                            // If not found, we compare the actual price to the timestamps in database
+                            None => {
+                                println!("No stock in database");
+
+                                let timestamp = database::last_sell_prices(&dt.format("%F").to_string(), &crypto);
+                                for value in timestamp {
+                                    let compare_price = ((percentage / 100.0)) * value.value;
+
+                                    // If actual price is x% less than the prices we have stored these last n number of days
+                                    if actual_price.value < (compare_price as f64) {
+                                        println!("=======================================================================");
+                                        println!("Lowest actual price");
+                                        println!("{:?}", value);
+                                        println!("Database price : {:?}", value.value);
+                                        println!("Compare price : {:?}", compare_price);
+
+                                        // We should Buy
+                                        buy(&crypto, &account_euro);
+                                        break;
+                                    }
+                                }
+                            },
+                        };
+                    } else {
+                        println!("Buy is blocked. Max buy stock has been met. Stock is : {}", lines.iter().count());
                     }
                 },
                 None => {
-                    println!("No stock in database");
-
-                    let timestamp = database::last_sell_prices(&dt.format("%F").to_string(), &crypto);
-                    for value in timestamp {
-                        let compare_price = ((percentage / 100.0)) * value.value;
-
-                        // If actual price is x% less than the prices we have stored these last n number of days
-                        if actual_price.value < (compare_price as f64) {
-                            println!("=======================================================================");
-                            println!("Lowest actual price");
-                            println!("{:?}", value);
-                            println!("Database price : {:?}", value.value);
-                            println!("Compare price : {:?}", compare_price);
-
-                            // We should Buy
-                            buy(&crypto, &account_euro);
-                            break;
-                        }
-                    }
+                    println!("No stock at the moment");
                 },
             };
 
