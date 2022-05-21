@@ -35,10 +35,16 @@ pub mod api {
                 let call = format!("https://api.coinbase.com/v2/prices/{}-EUR/{}", crypto, key);
 
                 let res = get(call).unwrap();
-                let response = res.json::<DataPrice>().unwrap();
+                let response: DataPrice;
+                match res.json::<DataPrice>() {
+                    Ok(r) => {
+                        response = r;
 
-                let price: Price = response.data;
-                let _result = database::add_timestamp(price.base.to_string(), value.to_string(), price.amount.to_string(), now.to_string());
+                        let price: Price = response.data;
+                        let _result = database::add_timestamp(price.base.to_string(), value.to_string(), price.amount.to_string(), now.to_string());
+                    },
+                    Err(_) => { println!("Timestamp cannot be read") }
+                };
             }
         }
     }

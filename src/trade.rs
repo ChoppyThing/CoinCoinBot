@@ -307,10 +307,16 @@ pub mod trade {
         #[derive(Deserialize, Debug)]
         struct Sell {
             id: String,
-            amount: SellTotal,
+            total: SellTotal,
+            fee: SellFee,
         };
         #[derive(Deserialize, Debug)]
         struct SellTotal {
+            amount: String,
+            currency: String
+        };
+        #[derive(Deserialize, Debug)]
+        struct SellFee {
             amount: String,
             currency: String
         };
@@ -344,8 +350,9 @@ pub mod trade {
         };
 
         let sell: Sell = response.unwrap().data;
+        let total = sell.total.amount.parse::<f64>().unwrap() - sell.fee.amount.parse::<f64>().unwrap();
 
-        database::set_sold_stock(stock.id);
+        database::set_sold_stock(stock.id.to_string(), total.to_string());
 
         println!("----- Crypto Sold -----");
         /*println!("{:?}", sell);*/

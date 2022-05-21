@@ -76,8 +76,8 @@ pub mod database {
 
 		let conn = open();
 		let mut statement = conn.prepare(
-			"INSERT INTO stock (name, amount, bought_at, status, datetime, fees)
-			VALUES (:name, :amount, :bought_at, :status, :datetime, :fees)"
+			"INSERT INTO stock (name, amount, bought_at, sold_at, status, datetime, fees)
+			VALUES (:name, :amount, :bought_at, 0, :status, :datetime, :fees)"
 		)?;
 		let _test = statement.execute(&[
 			(":name", &name),
@@ -92,13 +92,17 @@ pub mod database {
 		Ok(())
 	}
 
-	pub fn set_sold_stock(id: i32) -> Result<()> {
+	pub fn set_sold_stock(id: String, total: String) -> Result<()> {
 		let conn = open();
 		let mut statement = conn.prepare(
-			"UPDATE stock SET status='SOLD' WHERE id=:id"
+			"UPDATE stock
+				SET status='SOLD',
+				sold_at=:sold_at
+			WHERE id=:id"
 		)?;
 		let _test = statement.execute(&[
 			(":id", &id),
+			(":sold_at", &total),
 		])?;
 
 		Ok(())
