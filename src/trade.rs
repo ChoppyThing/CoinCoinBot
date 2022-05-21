@@ -288,7 +288,7 @@ pub mod trade {
                         println!("Actual Sell price : {:?}", actual_price.value);
 
                         if actual_price.value > (compare_price as f64) {
-                            sell(&crypto, stock);
+                            sell(&crypto, stock, actual_price.value);
                         }
                     }
                 },
@@ -299,7 +299,7 @@ pub mod trade {
         }
     }
 
-    fn sell(crypto: &str, stock: database::Stock) {
+    fn sell(crypto: &str, stock: database::Stock, actual_price: f64) {
         #[derive(Deserialize, Debug)]
         struct DataSell {
             data: Sell
@@ -350,9 +350,8 @@ pub mod trade {
         };
 
         let sell: Sell = response.unwrap().data;
-        let total = sell.total.amount.parse::<f64>().unwrap() - sell.fee.amount.parse::<f64>().unwrap();
 
-        database::set_sold_stock(stock.id.to_string(), total.to_string());
+        database::set_sold_stock(stock.id.to_string(), actual_price.to_string());
 
         println!("----- Crypto Sold -----");
         /*println!("{:?}", sell);*/
