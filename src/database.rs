@@ -83,7 +83,6 @@ pub mod database {
 			(":name", &name),
 			(":amount", &amount),
 			(":bought_at", &bought_at),
-			(":bought_at", &"0".to_string()),
 			(":status", &"BOUGHT".to_string()),
 			(":datetime", &now.to_string()),
 			(":fees", &fees)
